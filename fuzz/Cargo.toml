@@ -1,0 +1,25 @@
+[package]
+name = "vodozemac-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.vodozemac]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "session_decryption"
+path = "fuzz_targets/session_decryption.rs"
+test = false
+doc = false

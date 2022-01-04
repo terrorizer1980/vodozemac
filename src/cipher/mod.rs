@@ -116,10 +116,16 @@ impl Cipher {
         }
     }
 
+    #[cfg(not(fuzzing))]
     pub fn verify_mac(&self, message: &[u8], tag: &[u8]) -> Result<(), MacError> {
         let mut hmac = self.get_hmac();
 
         hmac.update(message);
         hmac.verify_truncated_left(tag)
+    }
+
+    #[cfg(fuzzing)]
+    pub fn verify_mac(&self, _: &[u8], _: &[u8]) -> Result<(), MacError> {
+        Ok(())
     }
 }
