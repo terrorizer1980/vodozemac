@@ -12,4 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Module containing re-exports of private types that we want to fuzz.
+//!
+//! These types aren't part of the public interface of vodozemac but we're
+//! re-exporting them so we can fuzz them individiually.
+//!
+//! The module will be enabled if the fuzzing config flag is set, add `--cfg
+//! fuzzing` to the RUST_FLAGS if you wish to enable this, `afl-rs` does this
+//! automatically.
+
 pub use crate::olm::messages::{DecodedMessage, DecodedPreKeyMessage};
