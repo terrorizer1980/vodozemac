@@ -18,7 +18,7 @@ mod pre_key;
 pub use message::{DecodedMessage, EncodedMessage};
 pub use pre_key::{DecodedPreKeyMessage, EncodedPrekeyMessage};
 
-#[derive(Debug, Clone, PartialEq, arbitrary::Arbitrary)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Message {
     pub(super) inner: String,
 }
@@ -29,7 +29,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, arbitrary::Arbitrary)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PreKeyMessage {
     pub(super) inner: String,
 }
@@ -40,7 +40,7 @@ impl PreKeyMessage {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, arbitrary::Arbitrary)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum OlmMessage {
     Normal(Message),
     PreKey(PreKeyMessage),
