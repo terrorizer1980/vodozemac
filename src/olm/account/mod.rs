@@ -203,7 +203,7 @@ impl Account {
             .or_else(|| self.fallback_keys.get_secret_key(public_key))
     }
 
-    fn remove_one_time_key(
+    pub fn remove_one_time_key(
         &mut self,
         public_key: &Curve25519PublicKey,
     ) -> Option<Curve25519SecretKey> {
