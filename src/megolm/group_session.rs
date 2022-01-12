@@ -21,7 +21,7 @@ use zeroize::Zeroize;
 use super::{
     message::EncodedMegolmMessage,
     ratchet::{MegolmRatchetUnpicklingError, Ratchet, RatchetPickle},
-    SessionKey, SESSION_KEY_VERSION,
+    InboundGroupSession, SessionKey, SESSION_KEY_VERSION,
 };
 use crate::{cipher::Cipher, types::Ed25519Keypair, utilities::base64_encode};
 
@@ -58,6 +58,11 @@ impl GroupSession {
     pub fn new() -> Self {
         let signing_key = Ed25519Keypair::new();
         Self { signing_key, ratchet: Ratchet::new() }
+    }
+
+    pub(super) fn from_inbound_session(session: &InboundGroupSession) -> Self {
+        let signing_key = Ed25519Keypair::new();
+        Self { signing_key, ratchet: session.get_initial_ratchet().clone() }
     }
 
     /// Returns the globally unique session ID, in base64-encoded form.

@@ -15,12 +15,12 @@
 #![deny(
     clippy::mem_forget,
     clippy::unwrap_used,
-    dead_code,
+    // dead_code,
     trivial_casts,
     trivial_numeric_casts,
     unsafe_code,
     unsafe_op_in_unsafe_fn,
-    unused_extern_crates,
+    // unused_extern_crates,
     unused_import_braces,
     unused_qualifications
 )]

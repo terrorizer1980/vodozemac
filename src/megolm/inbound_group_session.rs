@@ -152,6 +152,10 @@ impl InboundGroupSession {
         }
     }
 
+    pub(super) fn get_initial_ratchet(&self) -> &Ratchet {
+        &self.initial_ratchet
+    }
+
     pub fn session_id(&self) -> String {
         base64_encode(self.signing_key.as_bytes())
     }

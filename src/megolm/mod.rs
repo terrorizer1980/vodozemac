@@ -26,6 +26,8 @@ pub use inbound_group_session::{
 };
 use zeroize::Zeroize;
 
+mod test_reencrypt;
+
 #[derive(Zeroize)]
 pub struct SessionKey(pub String);
 
