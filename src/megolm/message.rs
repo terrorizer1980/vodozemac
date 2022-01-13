@@ -16,19 +16,26 @@ use prost::Message;
 
 use crate::{
     cipher::Mac,
-    types::Ed25519Signature,
+    types::{Ed25519Signature, SignatureError},
     utilities::{base64_decode, VarInt},
-    DecodeError,
+    DecodeError, Ed25519PublicKey,
 };
 
 const VERSION: u8 = 3;
 
-pub(super) struct MegolmMessage {
-    pub source: EncodedMegolmMessage,
+pub struct MegolmMessage {
+    // TODO: Don't allow edits without updating `EncodedMegolmMessage`.
+    pub(super) source: EncodedMegolmMessage,
     pub ciphertext: Vec<u8>,
     pub message_index: u32,
     pub mac: [u8; 8],
     pub signature: Ed25519Signature,
+}
+
+impl MegolmMessage {
+    pub fn verify_signature(&self, signing_key: &Ed25519PublicKey) -> Result<(), SignatureError> {
+        signing_key.verify(self.source.bytes_for_signing(), &self.signature)
+    }
 }
 
 impl TryFrom<&str> for MegolmMessage {

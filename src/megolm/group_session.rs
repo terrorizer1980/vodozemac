@@ -60,6 +60,14 @@ impl GroupSession {
         Self { signing_key, ratchet: Ratchet::new() }
     }
 
+    pub fn from_parts(ratchet: Ratchet, signing_key: Ed25519Keypair) -> Self {
+        Self { signing_key, ratchet }
+    }
+
+    pub fn into_parts(self) -> (Ratchet, Ed25519Keypair) {
+        (self.ratchet, self.signing_key)
+    }
+
     /// Returns the globally unique session ID, in base64-encoded form.
     ///
     /// A session ID is the public part of the Ed25519 key pair associated with

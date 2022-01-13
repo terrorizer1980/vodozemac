@@ -26,7 +26,7 @@ const ADVANCEMENT_SEEDS: [&[u8; 1]; Ratchet::RATCHET_PART_COUNT] =
 #[derive(Serialize, Deserialize, Zeroize, Clone)]
 #[serde(try_from = "RatchetPickle")]
 #[serde(into = "RatchetPickle")]
-pub(super) struct Ratchet {
+pub struct Ratchet {
     inner: [u8; Self::RATCHET_LENGTH],
     counter: u32,
 }
@@ -196,6 +196,12 @@ impl Ratchet {
 
             self.counter = advance_to & mask;
         }
+    }
+}
+
+impl Default for Ratchet {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

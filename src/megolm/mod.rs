@@ -18,28 +18,15 @@ mod group_session;
 mod inbound_group_session;
 mod message;
 mod ratchet;
+mod session_key;
 
 pub use group_session::{GroupSession, GroupSessionPickledJSON};
 pub use inbound_group_session::{
     DecryptedMessage, DecryptionError, ExportedSessionKey, InboundGroupSession,
-    SessionCreationError,
 };
-use zeroize::Zeroize;
-
-#[derive(Zeroize)]
-pub struct SessionKey(pub String);
-
-impl SessionKey {
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl Drop for SessionKey {
-    fn drop(&mut self) {
-        self.0.zeroize()
-    }
-}
+pub use message::MegolmMessage;
+pub use ratchet::Ratchet;
+pub use session_key::{SessionCreationError, SessionKey};
 
 const SESSION_KEY_VERSION: u8 = 2;
 
@@ -52,6 +39,10 @@ mod test {
     };
 
     use super::{GroupSession, InboundGroupSession, SessionKey};
+    use crate::{
+        megolm::{session_key::GenericSessionKey, MegolmMessage},
+        types::Ed25519Keypair,
+    };
 
     #[test]
     fn encrypting() -> Result<()> {
@@ -218,6 +209,45 @@ mod test {
 
         assert_eq!(olm.session_id(), unpickled.session_id());
         assert_eq!(olm.first_known_index(), unpickled.first_known_index());
+
+        Ok(())
+    }
+
+    #[test]
+    fn reencrypt() -> Result<()> {
+        let mut session = GroupSession::new();
+        let mut inbound = InboundGroupSession::new(&session.session_key())?;
+
+        assert_eq!(session.session_id(), inbound.session_id());
+
+        let plaintext = "It's a secret to everybody";
+        let message = session.encrypt(plaintext);
+
+        let decrypted = inbound.decrypt(&message)?;
+
+        assert_eq!(decrypted.plaintext, plaintext);
+        assert_eq!(decrypted.message_index, 0);
+
+        let parsed_ciphertext = MegolmMessage::try_from(message.as_str())?;
+
+        let exported_session_key =
+            inbound.export_at(parsed_ciphertext.message_index).expect("Can export key");
+
+        let (ratchet, public_signing_key) = exported_session_key.parse(false)?;
+
+        let mut fake_group_session = GroupSession::from_parts(ratchet, Ed25519Keypair::new());
+
+        let reencrypted_ciphertext = fake_group_session.encrypt(&decrypted.plaintext);
+
+        let mut parsed_reencypted_ciphertext =
+            MegolmMessage::try_from(reencrypted_ciphertext.as_str())?;
+        parsed_reencypted_ciphertext.signature = parsed_ciphertext.signature;
+
+        parsed_reencypted_ciphertext.verify_signature(&public_signing_key)?;
+
+        assert_eq!(parsed_reencypted_ciphertext.ciphertext, parsed_ciphertext.ciphertext);
+        assert_eq!(parsed_reencypted_ciphertext.mac, parsed_ciphertext.mac);
+        assert_eq!(parsed_reencypted_ciphertext.message_index, parsed_ciphertext.message_index);
 
         Ok(())
     }

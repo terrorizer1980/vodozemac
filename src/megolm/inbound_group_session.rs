@@ -26,28 +26,17 @@ use zeroize::Zeroize;
 use super::{
     message::MegolmMessage,
     ratchet::{MegolmRatchetUnpicklingError, Ratchet, RatchetPickle},
-    SessionKey, SESSION_KEY_VERSION,
+    session_key::GenericSessionKey,
+    SessionCreationError, SessionKey,
 };
 use crate::{
     cipher::Cipher,
-    types::{Ed25519PublicKey, Ed25519Signature, SignatureError},
+    types::{Ed25519PublicKey, SignatureError},
     utilities::{base64_decode, base64_encode},
     DecodeError,
 };
 
 const SESSION_KEY_EXPORT_VERSION: u8 = 1;
-
-#[derive(Debug, Error)]
-pub enum SessionCreationError {
-    #[error("The session had a invalid version, expected {0}, got {1}")]
-    Version(u8, u8),
-    #[error("The session key was too short {0}")]
-    Read(#[from] std::io::Error),
-    #[error("The session key wasn't valid base64: {0}")]
-    Base64(#[from] base64::DecodeError),
-    #[error("The signature on the session key was invalid: {0}")]
-    Signature(#[from] SignatureError),
-}
 
 #[derive(Debug, Error)]
 pub enum DecryptionError {
@@ -91,6 +80,14 @@ impl ExportedSessionKey {
     }
 }
 
+impl GenericSessionKey for ExportedSessionKey {
+    const SESSION_KEY_VERSION: u8 = SESSION_KEY_EXPORT_VERSION;
+
+    fn as_str(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl Drop for ExportedSessionKey {
     fn drop(&mut self) {
         self.0.zeroize()
@@ -99,57 +96,26 @@ impl Drop for ExportedSessionKey {
 
 impl InboundGroupSession {
     pub fn new(session_key: &SessionKey) -> Result<Self, SessionCreationError> {
-        Self::new_helper(&session_key.0, false)
+        Self::new_helper(session_key, true)
     }
 
     pub fn import(exported_session_key: &ExportedSessionKey) -> Result<Self, SessionCreationError> {
-        Self::new_helper(&exported_session_key.0, true)
+        Self::new_helper(exported_session_key, false)
     }
 
-    fn new_helper(session_key: &str, is_export: bool) -> Result<Self, SessionCreationError> {
-        let decoded = base64_decode(session_key)?;
-        let mut cursor = Cursor::new(decoded);
+    fn new_helper(
+        session_key: &impl GenericSessionKey,
+        verify_signature: bool,
+    ) -> Result<Self, SessionCreationError> {
+        let (initial_ratchet, signing_key) = session_key.parse(verify_signature)?;
+        let latest_ratchet = initial_ratchet.clone();
 
-        let mut version = [0u8; 1];
-        let mut index = [0u8; 4];
-        let mut ratchet = [0u8; 128];
-        let mut public_key = [0u8; Ed25519PublicKey::LENGTH];
-
-        cursor.read_exact(&mut version)?;
-
-        let expected_version =
-            if is_export { SESSION_KEY_EXPORT_VERSION } else { SESSION_KEY_VERSION };
-
-        if version[0] != expected_version {
-            Err(SessionCreationError::Version(SESSION_KEY_VERSION, version[0]))
-        } else {
-            cursor.read_exact(&mut index)?;
-            cursor.read_exact(&mut ratchet)?;
-            cursor.read_exact(&mut public_key)?;
-
-            let signing_key = Ed25519PublicKey::from_bytes(&public_key)?;
-
-            let signing_key_verified = if !is_export {
-                let mut signature = [0u8; Ed25519Signature::LENGTH];
-
-                cursor.read_exact(&mut signature)?;
-                let signature = Ed25519Signature::from_bytes(&signature)?;
-
-                let decoded = cursor.into_inner();
-
-                signing_key.verify(&decoded[..decoded.len() - 64], &signature)?;
-
-                true
-            } else {
-                false
-            };
-
-            let index = u32::from_be_bytes(index);
-            let initial_ratchet = Ratchet::from_bytes(ratchet, index);
-            let latest_ratchet = initial_ratchet.clone();
-
-            Ok(Self { initial_ratchet, latest_ratchet, signing_key, signing_key_verified })
-        }
+        Ok(Self {
+            initial_ratchet,
+            latest_ratchet,
+            signing_key,
+            signing_key_verified: verify_signature,
+        })
     }
 
     pub fn session_id(&self) -> String {
@@ -180,7 +146,7 @@ impl InboundGroupSession {
     pub fn decrypt(&mut self, ciphertext: &str) -> Result<DecryptedMessage, DecryptionError> {
         let message = MegolmMessage::try_from(ciphertext)?;
 
-        self.signing_key.verify(message.source.bytes_for_signing(), &message.signature)?;
+        message.verify_signature(&self.signing_key)?;
 
         if let Some(ratchet) = self.find_ratchet(message.message_index) {
             let cipher = Cipher::new_megolm(ratchet.as_bytes());

@@ -67,6 +67,12 @@ impl Ed25519Keypair {
     }
 }
 
+impl Default for Ed25519Keypair {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 enum Ed25519SecretKey {
     Normal(SecretKey),
