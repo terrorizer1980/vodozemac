@@ -34,7 +34,10 @@ pub mod megolm;
 pub mod olm;
 pub mod sas;
 
-pub use types::{Curve25519KeyError, Curve25519PublicKey, Ed25519PublicKey, SignatureError};
+pub use types::{
+    Curve25519KeyError, Curve25519PublicKey, Ed25519Keypair, Ed25519PublicKey, Ed25519Signature,
+    SignatureError,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum LibolmUnpickleError {
