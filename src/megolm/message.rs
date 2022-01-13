@@ -26,15 +26,45 @@ const VERSION: u8 = 3;
 pub struct MegolmMessage {
     // TODO: Don't allow edits without updating `EncodedMegolmMessage`.
     pub(super) source: EncodedMegolmMessage,
-    pub ciphertext: Vec<u8>,
-    pub message_index: u32,
-    pub mac: [u8; 8],
-    pub signature: Ed25519Signature,
+    pub(super) ciphertext: Vec<u8>,
+    pub(super) message_index: u32,
+    pub(super) mac: [u8; 8],
+    pub(super) signature: Ed25519Signature,
 }
 
 impl MegolmMessage {
     pub fn verify_signature(&self, signing_key: &Ed25519PublicKey) -> Result<(), SignatureError> {
         signing_key.verify(self.source.bytes_for_signing(), &self.signature)
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.source.as_ref()
+    }
+
+    /// Get a reference to the megolm message's ciphertext.
+    pub fn ciphertext(&self) -> &[u8] {
+        self.ciphertext.as_ref()
+    }
+
+    /// Get the megolm message's message index.
+    pub fn message_index(&self) -> u32 {
+        self.message_index
+    }
+
+    /// Get the megolm message's mac.
+    pub fn mac(&self) -> [u8; 8] {
+        self.mac
+    }
+
+    /// Get a reference to the megolm message's signature.
+    pub fn signature(&self) -> &Ed25519Signature {
+        &self.signature
+    }
+
+    /// Set the megolm message's signature.
+    pub fn set_signature(&mut self, signature: Ed25519Signature) {
+        self.source.append_signature(&signature);
+        self.signature = signature;
     }
 }
 
@@ -120,7 +150,7 @@ impl EncodedMegolmMessage {
         &self.0[..self.signature_start()]
     }
 
-    pub fn append_signature(&mut self, signature: Ed25519Signature) {
+    pub fn append_signature(&mut self, signature: &Ed25519Signature) {
         let signature_start = self.signature_start();
         self.0[signature_start..].copy_from_slice(&signature.to_bytes());
     }

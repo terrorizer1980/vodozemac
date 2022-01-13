@@ -99,7 +99,7 @@ impl GroupSession {
         message.append_mac(mac);
 
         let signature = self.signing_key.sign(message.bytes_for_signing());
-        message.append_signature(signature);
+        message.append_signature(&signature);
 
         self.ratchet.advance();
 
