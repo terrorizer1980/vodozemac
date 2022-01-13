@@ -26,7 +26,7 @@ pub use inbound_group_session::{
 };
 pub use message::MegolmMessage;
 pub use ratchet::Ratchet;
-pub use session_key::{SessionCreationError, SessionKey};
+pub use session_key::{GenericSessionKey, SessionCreationError, SessionKey};
 
 const SESSION_KEY_VERSION: u8 = 2;
 
