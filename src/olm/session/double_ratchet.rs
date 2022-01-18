@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     chain_key::ChainKey,
+    message_key::MessageKey,
     ratchet::{Ratchet, RatchetPublicKey, RemoteRatchetKey},
     receiver_chain::ReceiverChain,
     root_key::{RemoteRootKey, RootKey},
@@ -29,6 +30,20 @@ pub(super) struct DoubleRatchet {
 }
 
 impl DoubleRatchet {
+    pub fn next_message_key(&mut self) -> MessageKey {
+        match &mut self.inner {
+            DoubleRatchetState::Inactive(ratchet) => {
+                let mut ratchet = ratchet.activate();
+
+                let message_key = ratchet.next_message_key();
+                self.inner = DoubleRatchetState::Active(ratchet);
+
+                message_key
+            }
+            DoubleRatchetState::Active(ratchet) => ratchet.next_message_key(),
+        }
+    }
+
     pub fn encrypt(&mut self, plaintext: &str) -> EncodedMessage {
         match &mut self.inner {
             DoubleRatchetState::Inactive(ratchet) => {
@@ -145,8 +160,12 @@ impl ActiveDoubleRatchet {
         RatchetPublicKey::from(self.active_ratchet.ratchet_key())
     }
 
+    fn next_message_key(&mut self) -> MessageKey {
+        self.hkdf_ratchet.create_message_key(self.ratchet_key())
+    }
+
     fn encrypt(&mut self, plaintext: &[u8]) -> EncodedMessage {
-        let message_key = self.hkdf_ratchet.create_message_key(self.ratchet_key());
+        let message_key = self.next_message_key();
 
         message_key.encrypt(plaintext)
     }

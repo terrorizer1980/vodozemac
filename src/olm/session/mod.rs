@@ -39,6 +39,7 @@ use thiserror::Error;
 use zeroize::Zeroize;
 
 use self::double_ratchet::DoubleRatchetPickle;
+pub use self::{message_key::MessageKey, ratchet::RatchetPublicKey};
 use super::{
     session_keys::{SessionKeys, SessionKeysPickle},
     shared_secret::{RemoteShared3DHSecret, Shared3DHSecret},
@@ -197,8 +198,8 @@ impl Session {
         base64_encode(digest)
     }
 
-    // Have we ever received and decrypted a message from the other side?
-    fn has_received_message(&self) -> bool {
+    /// Have we ever received and decrypted a message from the other side?
+    pub fn has_received_message(&self) -> bool {
         !self.receiving_chains.is_empty()
     }
 
@@ -223,6 +224,13 @@ impl Session {
 
             OlmMessage::PreKey(PreKeyMessage { inner: base64_encode(message) })
         }
+    }
+
+    /// Get the next [`MessageKey`] to use to encrypt the next message.
+    ///
+    /// This key *must* be used.
+    pub fn next_message_key(&mut self) -> MessageKey {
+        self.sending_ratchet.next_message_key()
     }
 
     /// Try to decrypt an Olm message, which will either return the plaintext or
@@ -413,6 +421,11 @@ impl Session {
                 Err(crate::LibolmUnpickleError::InvalidSession)
             }
         }
+    }
+
+    /// Get a reference to the session's session keys.
+    pub fn session_keys(&self) -> &SessionKeys {
+        &self.session_keys
     }
 }
 

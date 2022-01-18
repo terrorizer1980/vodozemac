@@ -21,7 +21,7 @@ use crate::{
     olm::messages::{DecodedMessage, EncodedMessage},
 };
 
-pub(super) struct MessageKey {
+pub struct MessageKey {
     key: [u8; 32],
     ratchet_key: RatchetPublicKey,
     index: u64,
@@ -61,6 +61,21 @@ impl MessageKey {
         message.append_mac(mac);
 
         message
+    }
+
+    /// Get the message key's key.
+    pub fn key(&self) -> [u8; 32] {
+        self.key
+    }
+
+    /// Get a reference to the message key's ratchet key.
+    pub fn ratchet_key(&self) -> &RatchetPublicKey {
+        &self.ratchet_key
+    }
+
+    /// Get the message key's index.
+    pub fn index(&self) -> u64 {
+        self.index
     }
 }
 

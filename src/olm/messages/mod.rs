@@ -16,7 +16,8 @@ mod message;
 mod pre_key;
 
 pub(crate) use message::{DecodedMessage, EncodedMessage};
-pub(crate) use pre_key::{DecodedPreKeyMessage, EncodedPrekeyMessage};
+pub(crate) use pre_key::DecodedPreKeyMessage;
+pub use pre_key::EncodedPrekeyMessage;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message {

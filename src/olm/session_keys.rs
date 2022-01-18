@@ -19,10 +19,10 @@ use crate::Curve25519PublicKey;
 
 /// The set of keys that were used to establish the Olm Session,
 #[derive(Serialize, Deserialize, Clone)]
-pub(crate) struct SessionKeys {
-    pub(crate) identity_key: Curve25519PublicKey,
-    pub(crate) base_key: Curve25519PublicKey,
-    pub(crate) one_time_key: Curve25519PublicKey,
+pub struct SessionKeys {
+    pub identity_key: Curve25519PublicKey,
+    pub base_key: Curve25519PublicKey,
+    pub one_time_key: Curve25519PublicKey,
 }
 
 pub(crate) type SessionKeysPickle = SessionKeys;
