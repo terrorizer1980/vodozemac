@@ -278,6 +278,13 @@ impl Account {
         self.one_time_keys.generate(count);
     }
 
+    /// Add an already published one time key.
+    ///
+    /// Note: This is only useful if storing OTKs separately.
+    pub fn add_one_time_key(&mut self, key_id: KeyId, key: Curve25519SecretKey, published: bool) {
+        self.one_time_keys.insert_secret_key(key_id, key, published);
+    }
+
     /// Get the currently unpublished one-time keys.
     ///
     /// The one-time keys should be published to a server and marked as
